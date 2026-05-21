@@ -67,9 +67,10 @@ func (l *Lulustream) Resource(client *resty.Client) (cr ext.ContentResource, err
 func (*Lulustream) Download(cr ext.ContentResource) (err error) {
 	cmd := exec.Command("yt-dlp.exe", cr.URL, "-o", cr.Name)
 	var header []string
-	for k, v := range ext.Header {
-		header = append(header, []string{"--add-header", fmt.Sprintf("%s: %s", k, v)}...)
-	}
+	// for k, v := range ext.Header {
+	// 	header = append(header, []string{"--add-header", fmt.Sprintf("%s: %s", k, v)}...)
+	// }
+	// header = append(header, `-v`)
 	cmd.Args = append(cmd.Args, header...)
 	cmd.Stderr = os.Stderr
 	cmd.Stdout = os.Stdout
