@@ -102,19 +102,22 @@ func (l *Lulustream) Resource(client *resty.Client) (cr ext.ContentResource, err
 }
 
 func (l *Lulustream) Download(cr ext.ContentResource) (err error) {
-	cr.URL = `https://s3btuxnr4nip.tnmr.org/hls2/02/04027/2np4yvq66lrk_h/master.m3u8?t=7qeCYFleneOET-VImtmeTgftBYoTEmua0ef6mq1ZUiA&s=1784728741&e=28800&f=20137572&i=0.3&sp=0`
-	u, err := url.Parse(l.Source)
-	if err != nil {
-		return
-	}
-	cmd := exec.Command("yt-dlp.exe", cr.URL, "-o", cr.Name)
+	// Use the page URL as the Referer, as many sites validate this
+	referer := l.Source
+
+	// Construct command with --referer flag instead of just a header
+	cmd := exec.Command("yt-dlp.exe", cr.URL, "-o", cr.Name, "--referer", referer)
 
 	var arg []string
 	for k, v := range header {
-		arg = append(arg, []string{"--add-header", fmt.Sprintf("%s: %s", k, v)}...)
+		// Skip Referer here as we use the dedicated --referer flag
+		if k == "Referer" {
+			continue
+		}
+		arg = append(arg, "--add-header", fmt.Sprintf("%s: %s", k, v))
 	}
-	// arg = append(arg, `-v`)
 	cmd.Args = append(cmd.Args, arg...)
+
 	fmt.Println(cmd)
 	cmd.Stderr = os.Stderr
 	cmd.Stdout = os.Stdout
