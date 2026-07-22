@@ -116,20 +116,18 @@ func (l *Lulustream) Download(cr ext.ContentResource) (err error) {
 	origin := "https://" + u.Host
 	referer := l.Source
 
-	// Construct command with --referer and --user-agent flags
-	cmd := exec.Command("yt-dlp.exe", cr.URL, "-o", cr.Name, "--referer", referer, "--user-agent", header["User-Agent"])
+	// Use --add-header for everything to ensure consistency across all requests
+	cmd := exec.Command("yt-dlp.exe", cr.URL, "-o", cr.Name)
 
 	var arg []string
-	// Add Origin header explicitly
+	// Add essential headers
+	arg = append(arg, "--add-header", fmt.Sprintf("Referer: %s", referer))
 	arg = append(arg, "--add-header", fmt.Sprintf("Origin: %s", origin))
+	arg = append(arg, "--add-header", "User-Agent: Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:135.0) Gecko/20100101 Firefox/135.0")
+	arg = append(arg, "--add-header", "Accept: */*")
+	arg = append(arg, "--add-header", "Accept-Language: en-US,en;q=0.9")
+	arg = append(arg, "--add-header", "Connection: keep-alive")
 
-	for k, v := range header {
-		// Skip Referer, User-Agent, Origin, and Sec-Fetch-* as we use dedicated flags or remove them
-		if k == "Referer" || k == "User-Agent" || k == "Origin" || k == "Sec-Fetch-Dest" || k == "Sec-Fetch-Mode" || k == "Sec-Fetch-Site" {
-			continue
-		}
-		arg = append(arg, "--add-header", fmt.Sprintf("%s: %s", k, v))
-	}
 	cmd.Args = append(cmd.Args, arg...)
 
 	fmt.Println(cmd)
