@@ -109,29 +109,18 @@ func (l *Lulustream) Resource(client *resty.Client) (cr ext.ContentResource, err
 }
 
 func (l *Lulustream) Download(cr ext.ContentResource) (err error) {
-	u, err := url.Parse(l.Source)
-	if err != nil {
-		return err
-	}
-	origin := "https://" + u.Host
 	referer := l.Source
 
-	// Construct command with --referer flag
-	cmd := exec.Command("yt-dlp.exe", cr.URL, "-o", cr.Name, "--referer", referer)
+	// Construct command with --referer and --user-agent flags
+	cmd := exec.Command("yt-dlp.exe", cr.URL, "-o", cr.Name, "--referer", referer, "--user-agent", header["User-Agent"])
 
 	var arg []string
 	for k, v := range header {
-		// Skip Referer here as we use the dedicated flag
-		if k == "Referer" {
+		// Skip Referer, User-Agent, Origin, and Sec-Fetch-* as we use dedicated flags or remove them
+		if k == "Referer" || k == "User-Agent" || k == "Origin" || k == "Sec-Fetch-Dest" || k == "Sec-Fetch-Mode" || k == "Sec-Fetch-Site" {
 			continue
 		}
-
-		// Use dynamic origin if k is Origin
-		if k == "Origin" {
-			arg = append(arg, "--add-header", fmt.Sprintf("%s: %s", k, origin))
-		} else {
-			arg = append(arg, "--add-header", fmt.Sprintf("%s: %s", k, v))
-		}
+		arg = append(arg, "--add-header", fmt.Sprintf("%s: %s", k, v))
 	}
 	cmd.Args = append(cmd.Args, arg...)
 
