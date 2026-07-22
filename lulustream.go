@@ -109,12 +109,20 @@ func (l *Lulustream) Resource(client *resty.Client) (cr ext.ContentResource, err
 }
 
 func (l *Lulustream) Download(cr ext.ContentResource) (err error) {
+	u, err := url.Parse(l.Source)
+	if err != nil {
+		return err
+	}
+	origin := "https://" + u.Host
 	referer := l.Source
 
 	// Construct command with --referer and --user-agent flags
 	cmd := exec.Command("yt-dlp.exe", cr.URL, "-o", cr.Name, "--referer", referer, "--user-agent", header["User-Agent"])
 
 	var arg []string
+	// Add Origin header explicitly
+	arg = append(arg, "--add-header", fmt.Sprintf("Origin: %s", origin))
+
 	for k, v := range header {
 		// Skip Referer, User-Agent, Origin, and Sec-Fetch-* as we use dedicated flags or remove them
 		if k == "Referer" || k == "User-Agent" || k == "Origin" || k == "Sec-Fetch-Dest" || k == "Sec-Fetch-Mode" || k == "Sec-Fetch-Site" {
