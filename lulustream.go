@@ -116,16 +116,22 @@ func (l *Lulustream) Download(cr ext.ContentResource) (err error) {
 	origin := "https://" + u.Host
 	referer := l.Source
 
-	// Construct command with --referer and --origin flags
-	cmd := exec.Command("yt-dlp.exe", cr.URL, "-o", cr.Name, "--referer", referer, "--origin", origin)
+	// Construct command with --referer flag
+	cmd := exec.Command("yt-dlp.exe", cr.URL, "-o", cr.Name, "--referer", referer)
 
 	var arg []string
 	for k, v := range header {
-		// Skip Referer and Origin here as we use the dedicated flags
-		if k == "Referer" || k == "Origin" {
+		// Skip Referer here as we use the dedicated flag
+		if k == "Referer" {
 			continue
 		}
-		arg = append(arg, "--add-header", fmt.Sprintf("%s: %s", k, v))
+
+		// Use dynamic origin if k is Origin
+		if k == "Origin" {
+			arg = append(arg, "--add-header", fmt.Sprintf("%s: %s", k, origin))
+		} else {
+			arg = append(arg, "--add-header", fmt.Sprintf("%s: %s", k, v))
+		}
 	}
 	cmd.Args = append(cmd.Args, arg...)
 
