@@ -4,6 +4,7 @@ package lulustream
 import (
 	"fmt"
 	"html"
+	"net/url"
 	"os"
 	"os/exec"
 	"regexp"
@@ -12,6 +13,36 @@ import (
 	"github.com/kissanjamgit/ext"
 	"resty.dev/v3"
 )
+
+// map[
+// Accept:text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8
+// Accept-Encoding:gzip, deflate Accept-Language:en-US,en;q=0.5
+// Connection:keep-alive
+//
+//	DNT:1 Priority:u=0, i
+//	Sec-Fetch-Dest:document
+//	Sec-Fetch-Mode:navigate
+//	Sec-Fetch-Site:cross-site
+//	Sec-GPC:1
+//	TE:trailers
+//	Upgrade-Insecure-Requests:1
+//	User-Agent :Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:135.0) Gecko/20100101 Firefox/135.0]
+var header = map[string]string{
+	`User-Agent`:      `Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:152.0) Gecko/20100101 Firefox/152.0`,
+	`Accept`:          `*/*`,
+	`Accept-Language`: `en-US,en;q=0.9`,
+	`Accept-Encoding`: `gzip, deflate, br, zstd`,
+	`Origin`:          `https://luluvdo.com`,
+	`Sec-GPC`:         `1`,
+	`Connection`:      `keep-alive`,
+	`Referer`:         `https://luluvdo.com/`,
+	`Sec-Fetch-Dest`:  `empty`,
+	`Sec-Fetch-Mode`:  `cors`,
+	`Sec-Fetch-Site`:  `cross-site`,
+	`Priority`:        `u=0`,
+	`Pragma`:          `no-cache`,
+	`Cache-Control`:   `no-cache`,
+}
 
 type Lulustream struct {
 	Source string
@@ -27,14 +58,20 @@ func (l *Lulustream) Resource(client *resty.Client) (cr ext.ContentResource, err
 
 	value, err := ja.RunString(js)
 	if err != nil {
-		panic(err)
-	}
-
-	res, err := client.R().SetHeaders(ext.Header).Get(l.Source)
-	os.WriteFile(`content`, res.Bytes(), 0o777)
-	if err != nil {
 		return
 	}
+
+	// u, err := url.Parse(l.Source)
+	// if err != nil {
+	// 	return
+	// }
+	// header[`Referer`] = `https://` + u.Host + `/`
+	// header[`Origin`] = `https://` + u.Host
+	// fmt.Println(header)
+	// fmt.Println(header)
+	// return
+	res, err := client.R().SetHeaders(header).Get(l.Source)
+
 	scrabbledFunSubmatch := regexp.MustCompile(`<script type='text/javascript'>eval([^<]*)`).FindStringSubmatch(res.String())
 	if len(scrabbledFunSubmatch) < 2 {
 		err = fmt.Errorf(`len(scrabbledFunSubmatch) < 2 `)
@@ -64,14 +101,21 @@ func (l *Lulustream) Resource(client *resty.Client) (cr ext.ContentResource, err
 	return
 }
 
-func (*Lulustream) Download(cr ext.ContentResource) (err error) {
+func (l *Lulustream) Download(cr ext.ContentResource) (err error) {
+	cr.URL = `https://s3btuxnr4nip.tnmr.org/hls2/02/04027/2np4yvq66lrk_h/master.m3u8?t=7qeCYFleneOET-VImtmeTgftBYoTEmua0ef6mq1ZUiA&s=1784728741&e=28800&f=20137572&i=0.3&sp=0`
+	u, err := url.Parse(l.Source)
+	if err != nil {
+		return
+	}
 	cmd := exec.Command("yt-dlp.exe", cr.URL, "-o", cr.Name)
-	var header []string
-	// for k, v := range ext.Header {
-	// 	header = append(header, []string{"--add-header", fmt.Sprintf("%s: %s", k, v)}...)
-	// }
-	// header = append(header, `-v`)
-	cmd.Args = append(cmd.Args, header...)
+
+	var arg []string
+	for k, v := range header {
+		arg = append(arg, []string{"--add-header", fmt.Sprintf("%s: %s", k, v)}...)
+	}
+	// arg = append(arg, `-v`)
+	cmd.Args = append(cmd.Args, arg...)
+	fmt.Println(cmd)
 	cmd.Stderr = os.Stderr
 	cmd.Stdout = os.Stdout
 	err = cmd.Run()
