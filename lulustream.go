@@ -4,7 +4,6 @@ package lulustream
 import (
 	"fmt"
 	"html"
-	"net/url"
 	"os"
 	"os/exec"
 	"regexp"
