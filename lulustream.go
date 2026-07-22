@@ -4,6 +4,7 @@ package lulustream
 import (
 	"fmt"
 	"html"
+	"net/url"
 	"os"
 	"os/exec"
 	"regexp"
@@ -60,16 +61,23 @@ func (l *Lulustream) Resource(client *resty.Client) (cr ext.ContentResource, err
 		return
 	}
 
-	// u, err := url.Parse(l.Source)
-	// if err != nil {
-	// 	return
-	// }
-	// header[`Referer`] = `https://` + u.Host + `/`
-	// header[`Origin`] = `https://` + u.Host
-	// fmt.Println(header)
-	// fmt.Println(header)
-	// return
-	res, err := client.R().SetHeaders(header).Get(l.Source)
+	u, err := url.Parse(l.Source)
+	if err != nil {
+		return
+	}
+
+	// Create a local copy of headers to avoid modifying the global map
+	reqHeaders := make(map[string]string)
+	for k, v := range header {
+		reqHeaders[k] = v
+	}
+	reqHeaders[`Referer`] = `https://` + u.Host + `/`
+	reqHeaders[`Origin`] = `https://` + u.Host
+
+	res, err := client.R().SetHeaders(reqHeaders).Get(l.Source)
+	if err != nil {
+		return
+	}
 
 	scrabbledFunSubmatch := regexp.MustCompile(`<script type='text/javascript'>eval([^<]*)`).FindStringSubmatch(res.String())
 	if len(scrabbledFunSubmatch) < 2 {
